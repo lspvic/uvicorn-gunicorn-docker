@@ -1,12 +1,7 @@
 name: Deploy
 
 on:
-  push:
-    branches:
-      - master
-  schedule:
-    # cron every week on monday
-    - cron: "0 0 * * 1"
+  workflow_dispatch:
 
 jobs:
   build:
@@ -42,23 +37,22 @@ jobs:
       fail-fast: true
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3.3.0
-      - name: Set up Python
-        uses: actions/setup-python@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
         with:
-          python-version: "3.7"
-      - name: Install Dependencies
-        run: python3.7 -m pip install docker pytest
-      - name: Deploy Image
-        run: bash scripts/build-push.sh
-        env:
-          NAME: ${{ matrix.image.name }}
-          PYTHON_VERSION: ${{ matrix.image.python_version }}
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
-      - name: Docker Hub Description
-        uses: peter-evans/dockerhub-description@v3
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-          repository: tiangolo/uvicorn-gunicorn
+          platforms: linux/arm64
+          context: ./docker-images
+          file: ${{ matrix.image.name }}.dockerfile
+          push: true
+          tags: lspvic/uvicorn-gunicorn:${{ matrix.image.name }}
