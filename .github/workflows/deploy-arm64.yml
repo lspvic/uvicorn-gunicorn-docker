@@ -37,8 +37,6 @@ jobs:
       fail-fast: true
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
       - name: Set up Docker Buildx
@@ -52,7 +50,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           platforms: linux/arm64
-          context: ./docker-images
+          context: "{{defaultContext}}:docker-images"
           file: ${{ matrix.image.name }}.dockerfile
           push: true
           tags: lspvic/uvicorn-gunicorn:${{ matrix.image.name }}
